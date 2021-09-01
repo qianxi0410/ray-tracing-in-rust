@@ -1,8 +1,8 @@
-use crate::vec3::{Point3d, Vec3, Vec3d};
+use crate::vec3::{Point3d, Vec3d};
 
 pub struct Ray {
     orig: Point3d,
-    dir: Vec3<f64>,
+    dir: Vec3d,
 }
 
 impl Ray {
