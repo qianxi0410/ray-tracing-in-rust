@@ -1,4 +1,5 @@
 use std::{
+    f64,
     fmt::Display,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     process::Output,
@@ -156,6 +157,21 @@ impl<T: Display> Display for Vec3<T> {
     }
 }
 
+macro_rules! impl_mul_for {
+    {$($type: ident)+} => ($(
+        impl Mul<Vec3<$type>> for $type {
+            type Output = Vec3<$type>;
+
+            #[inline]
+            fn mul(self, rhs: Vec3<$type>) -> Self::Output {
+                rhs * self
+            }
+        }
+    )+)
+}
+
+impl_mul_for! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 f32 f64 }
+
 pub type Point3d = Vec3<f64>;
-pub type Color = Vec3<f64>;
+pub type Color3d = Vec3<f64>;
 pub type Vec3d = Vec3<f64>;
