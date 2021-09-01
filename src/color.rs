@@ -1,7 +1,7 @@
-use crate::vec3::Color;
+use crate::vec3::Color3d;
 use std::io;
 
-pub fn write_color(fp: &mut impl io::Write, color: Color) -> io::Result<()> {
+pub fn write_color(fp: &mut impl io::Write, color: Color3d) -> io::Result<()> {
     fp.write(
         format!(
             "{} {} {}\n",

@@ -1,10 +1,9 @@
-use std::fmt::write;
-use std::fs::{self, OpenOptions};
+use std::fs::OpenOptions;
 
 mod color;
+mod ray;
 mod vec3;
 
-use std::fs::File;
 use std::io::{self, Write};
 
 use crate::color::write_color;
@@ -23,7 +22,7 @@ fn main() -> io::Result<()> {
 
     for j in (0..IMAGE_HEIGHT).rev() {
         for i in 0..IMAGE_WIDTH {
-            let pixel_color = vec3::Color::new(
+            let pixel_color = vec3::Color3d::new(
                 i as f64 / (IMAGE_WIDTH - 1) as f64,
                 j as f64 / (IMAGE_HEIGHT - 1) as f64,
                 0.25,
