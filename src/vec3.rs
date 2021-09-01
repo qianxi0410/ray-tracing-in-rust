@@ -158,3 +158,4 @@ impl<T: Display> Display for Vec3<T> {
 
 pub type Point3d = Vec3<f64>;
 pub type Color = Vec3<f64>;
+pub type Vec3d = Vec3<f64>;
