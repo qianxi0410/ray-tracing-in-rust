@@ -1,6 +1,7 @@
 use std::fs::OpenOptions;
 
 mod color;
+mod hittable;
 mod ray;
 mod vec3;
 
