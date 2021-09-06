@@ -25,9 +25,12 @@ pub fn write_color(
     let mut b = color.z;
 
     let scale = 1.0 / samples_per_pixel as f64;
-    r *= scale;
-    g *= scale;
-    b *= scale;
+    // r *= scale;
+    // g *= scale;
+    // b *= scale;
+    r = (scale * r).sqrt();
+    g = (scale * g).sqrt();
+    b = (scale * b).sqrt();
 
     fp.write(
         format!(
