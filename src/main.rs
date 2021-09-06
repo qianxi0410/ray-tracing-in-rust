@@ -10,7 +10,7 @@ mod utils;
 mod vec3;
 
 use hittable::Hittable;
-use vec3::Vec3d;
+use vec3::{Vec3, Vec3d};
 
 use crate::camera::Camera;
 use crate::hittable_list::HittableList;
@@ -79,8 +79,23 @@ fn ray_color_5(r: &Ray, word: &Hittable) -> Color3d {
     (1.0 - t) * Color3d::only(1.0) + t * Color3d::new(0.5, 0.7, 1.0)
 }
 
+fn ray_color_6(r: &Ray, word: &Hittable, depth: i32) -> Color3d {
+    if depth <= 0 {
+        return Color3d::only(0.0);
+    }
+
+    if let Some(result) = word.hit(r, 0.0, f64::INFINITY) {
+        let target = result.p + result.normal + Vec3::random_in_unit_sphere();
+        return 0.5 * ray_color_6(&Ray::new(result.p, target - result.p), word, depth - 1);
+    }
+
+    let unit_direction = r.direction().unit_vector();
+    let t = 0.5 * (unit_direction.y + 1.0);
+    (1.0 - t) * Color3d::only(1.0) + t * Color3d::new(0.5, 0.7, 1.0)
+}
+
 fn main() {
-    scene6();
+    scene7();
 }
 
 fn scene1() -> io::Result<()> {
@@ -298,6 +313,44 @@ fn scene6() -> io::Result<()> {
 
                 let r = cam.get_ray(u, v);
                 color += ray_color_5(&r, &world);
+            }
+            write_color(&mut fp, color, SAMPLES_PER_PIXEL);
+        }
+    }
+
+    Ok(())
+}
+
+fn scene7() -> io::Result<()> {
+    const ASPECT_RATIO: f64 = 16.0 / 9.0;
+    const IMAGE_WIDTH: i32 = 400;
+    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+    const SAMPLES_PER_PIXEL: i32 = 100;
+    const MAX_DEPTH: i32 = 50;
+
+    let mut world = HittableList::new();
+    world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
+    world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
+
+    let cam = Camera::new();
+
+    let mut fp = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("./result/diffuse_sphere.ppm")
+        .expect("cannot open file");
+
+    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+
+    for j in (0..IMAGE_HEIGHT).rev() {
+        for i in 0..IMAGE_WIDTH {
+            let mut color = Color3d::only(0.0);
+            for _ in 0..SAMPLES_PER_PIXEL {
+                let u = (i as f64 + random_double()) / (IMAGE_WIDTH - 1) as f64;
+                let v = (j as f64 + random_double()) / (IMAGE_HEIGHT - 1) as f64;
+
+                let r = cam.get_ray(u, v);
+                color += ray_color_6(&r, &world, MAX_DEPTH);
             }
             write_color(&mut fp, color, SAMPLES_PER_PIXEL);
         }
