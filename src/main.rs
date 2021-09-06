@@ -85,7 +85,9 @@ fn ray_color_6(r: &Ray, word: &Hittable, depth: i32) -> Color3d {
     }
 
     if let Some(result) = word.hit(r, 0.001, f64::INFINITY) {
-        let target = result.p + result.normal + Vec3::random_in_unit_sphere();
+        // let target = result.p + result.normal + Vec3::random_unit_vector();
+        let target = result.p + result.normal + Vec3::random_in_hemisphere(&result.normal);
+
         return 0.5 * ray_color_6(&Ray::new(result.p, target - result.p), word, depth - 1);
     }
 
