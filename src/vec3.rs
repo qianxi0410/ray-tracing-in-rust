@@ -202,6 +202,15 @@ impl Vec3<f64> {
     pub fn random_unit_vector() -> Self {
         Vec3::random_in_unit_sphere().unit_vector()
     }
+
+    pub fn random_in_hemisphere(normal: &Vec3d) -> Self {
+        let in_unit_sphere = Vec3d::random_in_unit_sphere();
+        if in_unit_sphere.dot(normal) > 0.0 {
+            in_unit_sphere
+        } else {
+            -in_unit_sphere
+        }
+    }
 }
 
 pub type Point3d = Vec3<f64>;
