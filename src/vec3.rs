@@ -198,6 +198,10 @@ impl Vec3<f64> {
             return p;
         }
     }
+
+    pub fn random_unit_vector() -> Self {
+        Vec3::random_in_unit_sphere().unit_vector()
+    }
 }
 
 pub type Point3d = Vec3<f64>;
