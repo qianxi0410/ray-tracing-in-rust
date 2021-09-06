@@ -1,20 +1,22 @@
 use std::fs::OpenOptions;
 
+mod camera;
 mod color;
 mod hittable;
 mod hittable_list;
 mod ray;
-mod rtweekend;
 mod sphere;
+mod utils;
 mod vec3;
 
-use hittable::{HitRecord, Hittable};
-use rtweekend::INFINITY;
+use hittable::Hittable;
 use vec3::Vec3d;
 
+use crate::camera::Camera;
 use crate::hittable_list::HittableList;
 use crate::ray::Ray;
 use crate::sphere::Sphere;
+use crate::utils::random_double;
 use crate::vec3::Color3d;
 use crate::{color::write_color, vec3::Point3d};
 use std::io::{self, Write};
@@ -68,7 +70,7 @@ fn ray_color_sphere_color(r: &Ray) -> Color3d {
 }
 
 fn ray_color_5(r: &Ray, word: &Hittable) -> Color3d {
-    if let Some(result) = word.hit(r, 0.0, INFINITY) {
+    if let Some(result) = word.hit(r, 0.0, f64::INFINITY) {
         return 0.5 * (result.normal + Color3d::only(1.0));
     }
 
@@ -78,7 +80,7 @@ fn ray_color_5(r: &Ray, word: &Hittable) -> Color3d {
 }
 
 fn main() {
-    scene5();
+    scene6();
 }
 
 fn scene1() -> io::Result<()> {
@@ -101,7 +103,7 @@ fn scene1() -> io::Result<()> {
                 0.25,
             );
 
-            write_color(&mut fp, pixel_color);
+            // write_color(&mut fp, pixel_color);
         }
     }
     Ok(())
@@ -140,7 +142,7 @@ fn scene2() -> io::Result<()> {
                 lower_left_corner + u * horizontal + v * vertical - origin,
             );
             let pixel_color = ray_color(&r);
-            write_color(&mut fp, pixel_color);
+            // write_color(&mut fp, pixel_color);
         }
     }
     Ok(())
@@ -179,7 +181,7 @@ fn scene3() -> io::Result<()> {
                 lower_left_corner + u * horizontal + v * vertical - origin,
             );
             let pixel_color = ray_color_sphere(&r);
-            write_color(&mut fp, pixel_color);
+            // write_color(&mut fp, pixel_color);
         }
     }
     Ok(())
@@ -218,7 +220,7 @@ fn scene4() -> io::Result<()> {
                 lower_left_corner + u * horizontal + v * vertical - origin,
             );
             let pixel_color = ray_color_sphere_color(&r);
-            write_color(&mut fp, pixel_color);
+            // write_color(&mut fp, pixel_color);
         }
     }
     Ok(())
@@ -261,8 +263,45 @@ fn scene5() -> io::Result<()> {
                 lower_left_corner + u * horizontal + v * vertical - origin,
             );
             let pixel_color = ray_color_5(&r, &world);
-            write_color(&mut fp, pixel_color);
+            // write_color(&mut fp, pixel_color);
         }
     }
+    Ok(())
+}
+
+fn scene6() -> io::Result<()> {
+    const ASPECT_RATIO: f64 = 16.0 / 9.0;
+    const IMAGE_WIDTH: i32 = 400;
+    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+    const SAMPLES_PER_PIXEL: i32 = 100;
+
+    let mut world = HittableList::new();
+    world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
+    world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
+
+    let cam = Camera::new();
+
+    let mut fp = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("./result/multi_sampled.ppm")
+        .expect("cannot open file");
+
+    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+
+    for j in (0..IMAGE_HEIGHT).rev() {
+        for i in 0..IMAGE_WIDTH {
+            let mut color = Color3d::only(0.0);
+            for s in 0..SAMPLES_PER_PIXEL {
+                let u = (i as f64 + random_double()) / (IMAGE_WIDTH - 1) as f64;
+                let v = (j as f64 + random_double()) / (IMAGE_HEIGHT - 1) as f64;
+
+                let r = cam.get_ray(u, v);
+                color += ray_color_5(&r, &world);
+            }
+            write_color(&mut fp, color, SAMPLES_PER_PIXEL);
+        }
+    }
+
     Ok(())
 }
