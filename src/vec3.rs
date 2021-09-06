@@ -5,6 +5,8 @@ use std::{
     process::Output,
 };
 
+use crate::utils::{random_double, random_range};
+
 extern crate num_traits;
 
 #[allow(dead_code)]
@@ -171,6 +173,32 @@ macro_rules! impl_mul_for {
 }
 
 impl_mul_for! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 f32 f64 }
+
+impl Vec3<f64> {
+    #[inline]
+    pub fn random() -> Self {
+        Vec3::new(random_double(), random_double(), random_double())
+    }
+
+    #[inline]
+    pub fn random_range(min: f64, max: f64) -> Self {
+        Vec3::new(
+            random_range(min, max),
+            random_range(min, max),
+            random_range(min, max),
+        )
+    }
+
+    pub fn random_in_unit_sphere() -> Self {
+        loop {
+            let p = Vec3d::random_range(-1.0, 1.0);
+            if p.length_squared() >= 1.0 {
+                continue;
+            }
+            return p;
+        }
+    }
+}
 
 pub type Point3d = Vec3<f64>;
 pub type Color3d = Vec3<f64>;
