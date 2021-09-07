@@ -66,7 +66,7 @@ impl Dieletric {
     }
 }
 
-impl Material for Diagnostic {
+impl Material for Dieletric {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color3d, Ray)> {
         let attenuation = Color3d::only(1.0);
         let refraction_ratio = if rec.font_face {
