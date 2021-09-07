@@ -216,8 +216,16 @@ impl Vec3<f64> {
         self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON && self.z.abs() < f64::EPSILON
     }
 
-    pub fn reflect(&self, n: &Vec3d) -> Vec3d {
+    pub fn reflect(&self, n: &Self) -> Vec3d {
         *self - 2.0 * self.dot(n) * (*n)
+    }
+
+    pub fn refract(&self, n: &Self, etai_over_etat: f64) -> Self {
+        let cos_thea = self.neg().dot(n).min(1.0);
+        let r_out_perp = etai_over_etat * (*self + cos_thea * *n);
+        let r_out_parallel = (1.0 - r_out_perp.length_squared()).abs().sqrt().neg() * *n;
+
+        r_out_parallel + r_out_perp
     }
 }
 
