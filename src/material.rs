@@ -53,3 +53,30 @@ impl Material for Metal {
         }
     }
 }
+
+pub struct Dieletric {
+    ir: f64,
+}
+
+impl Dieletric {
+    pub fn new(index_of_refraction: f64) -> Self {
+        Self {
+            ir: index_of_refraction,
+        }
+    }
+}
+
+impl Material for Diagnostic {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color3d, Ray)> {
+        let attenuation = Color3d::only(1.0);
+        let refraction_ratio = if rec.font_face {
+            1.0 / self.ir
+        } else {
+            self.ir
+        };
+        let unit_direction = r_in.direction().unit_vector();
+        let refracted = unit_direction.refract(&rec.normal, refraction_ratio);
+
+        Some((attenuation, Ray::new(rec.p, refracted)))
+    }
+}
