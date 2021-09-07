@@ -211,6 +211,14 @@ impl Vec3<f64> {
             -in_unit_sphere
         }
     }
+
+    pub fn near_zero(&self) -> bool {
+        self.x.abs() < f64::EPSILON && self.y.abs() < f64::EPSILON && self.z.abs() < f64::EPSILON
+    }
+
+    pub fn reflect(&self, n: &Vec3d) -> Vec3d {
+        *self - 2.0 * self.dot(n) * (*n)
+    }
 }
 
 pub type Point3d = Vec3<f64>;

@@ -12,8 +12,12 @@ impl HittableList {
         Self { objects: vec![] }
     }
 
-    pub fn push(&mut self, p: Sphere) {
-        self.objects.push(Box::new(p));
+    pub fn clear(&mut self) {
+        self.objects.clear()
+    }
+
+    pub fn push(&mut self, p: Box<dyn Hittable>) {
+        self.objects.push(p);
     }
 }
 

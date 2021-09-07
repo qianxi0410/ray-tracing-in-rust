@@ -4,6 +4,7 @@ mod camera;
 mod color;
 mod hittable;
 mod hittable_list;
+mod material;
 mod ray;
 mod sphere;
 mod utils;
@@ -14,6 +15,7 @@ use vec3::{Vec3, Vec3d};
 
 use crate::camera::Camera;
 use crate::hittable_list::HittableList;
+use crate::material::{Diffuse, Metal};
 use crate::ray::Ray;
 use crate::sphere::Sphere;
 use crate::utils::random_double;
@@ -96,234 +98,290 @@ fn ray_color_6(r: &Ray, word: &Hittable, depth: i32) -> Color3d {
     (1.0 - t) * Color3d::only(1.0) + t * Color3d::new(0.5, 0.7, 1.0)
 }
 
+fn ray_color_7(r: &Ray, word: &Hittable, depth: i32) -> Color3d {
+    if depth <= 0 {
+        return Color3d::only(0.0);
+    }
+
+    if let Some(result) = word.hit(r, 0.001, f64::INFINITY) {
+        if let Some((attenuation, scattered)) = result.material.scatter(r, &result) {
+            return attenuation * ray_color_7(&scattered, word, depth - 1);
+        } else {
+            return Color3d::only(0.0);
+        }
+    }
+
+    let unit_direction = r.direction().unit_vector();
+    let t = 0.5 * (unit_direction.y + 1.0);
+    (1.0 - t) * Color3d::only(1.0) + t * Color3d::new(0.5, 0.7, 1.0)
+}
+
 fn main() {
-    scene7();
+    scene8();
 }
 
-fn scene1() -> io::Result<()> {
-    const IMAGE_WIDTH: i32 = 256;
-    const IMAGE_HEIGHT: i32 = 256;
+// fn scene1() -> io::Result<()> {
+//     const IMAGE_WIDTH: i32 = 256;
+//     const IMAGE_HEIGHT: i32 = 256;
 
-    let mut fp = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./result/scene1.ppm")
-        .expect("cannot open file");
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/scene1.ppm")
+//         .expect("cannot open file");
 
-    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        for i in 0..IMAGE_WIDTH {
-            let pixel_color = vec3::Color3d::new(
-                i as f64 / (IMAGE_WIDTH - 1) as f64,
-                j as f64 / (IMAGE_HEIGHT - 1) as f64,
-                0.25,
-            );
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let pixel_color = vec3::Color3d::new(
+//                 i as f64 / (IMAGE_WIDTH - 1) as f64,
+//                 j as f64 / (IMAGE_HEIGHT - 1) as f64,
+//                 0.25,
+//             );
 
-            // write_color(&mut fp, pixel_color);
-        }
-    }
-    Ok(())
-}
+//             // write_color(&mut fp, pixel_color);
+//         }
+//     }
+//     Ok(())
+// }
 
-fn scene2() -> io::Result<()> {
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: i32 = 400;
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+// fn scene2() -> io::Result<()> {
+//     const ASPECT_RATIO: f64 = 16.0 / 9.0;
+//     const IMAGE_WIDTH: i32 = 400;
+//     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
 
-    const VIEWPORT_HEIGHT: f64 = 2.0;
-    const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
-    const FOCAL_LENGTH: f64 = 1.0;
+//     const VIEWPORT_HEIGHT: f64 = 2.0;
+//     const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
+//     const FOCAL_LENGTH: f64 = 1.0;
 
-    let origin = Point3d::zero();
-    let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
-    let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
-    let lower_left_corner =
-        origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
+//     let origin = Point3d::zero();
+//     let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
+//     let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
+//     let lower_left_corner =
+//         origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
 
-    let mut fp = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./result/blue-to-white.ppm")
-        .expect("cannot open file");
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/blue-to-white.ppm")
+//         .expect("cannot open file");
 
-    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        for i in 0..IMAGE_WIDTH {
-            let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
-            let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
+//             let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
 
-            let r = Ray::new(
-                origin,
-                lower_left_corner + u * horizontal + v * vertical - origin,
-            );
-            let pixel_color = ray_color(&r);
-            // write_color(&mut fp, pixel_color);
-        }
-    }
-    Ok(())
-}
+//             let r = Ray::new(
+//                 origin,
+//                 lower_left_corner + u * horizontal + v * vertical - origin,
+//             );
+//             let pixel_color = ray_color(&r);
+//             // write_color(&mut fp, pixel_color);
+//         }
+//     }
+//     Ok(())
+// }
 
-fn scene3() -> io::Result<()> {
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: i32 = 400;
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+// fn scene3() -> io::Result<()> {
+//     const ASPECT_RATIO: f64 = 16.0 / 9.0;
+//     const IMAGE_WIDTH: i32 = 400;
+//     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
 
-    const VIEWPORT_HEIGHT: f64 = 2.0;
-    const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
-    const FOCAL_LENGTH: f64 = 1.0;
+//     const VIEWPORT_HEIGHT: f64 = 2.0;
+//     const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
+//     const FOCAL_LENGTH: f64 = 1.0;
 
-    let origin = Point3d::zero();
-    let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
-    let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
-    let lower_left_corner =
-        origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
+//     let origin = Point3d::zero();
+//     let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
+//     let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
+//     let lower_left_corner =
+//         origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
 
-    let mut fp = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./result/circle.ppm")
-        .expect("cannot open file");
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/circle.ppm")
+//         .expect("cannot open file");
 
-    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        for i in 0..IMAGE_WIDTH {
-            let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
-            let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
+//             let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
 
-            let r = Ray::new(
-                origin,
-                lower_left_corner + u * horizontal + v * vertical - origin,
-            );
-            let pixel_color = ray_color_sphere(&r);
-            // write_color(&mut fp, pixel_color);
-        }
-    }
-    Ok(())
-}
+//             let r = Ray::new(
+//                 origin,
+//                 lower_left_corner + u * horizontal + v * vertical - origin,
+//             );
+//             let pixel_color = ray_color_sphere(&r);
+//             // write_color(&mut fp, pixel_color);
+//         }
+//     }
+//     Ok(())
+// }
 
-fn scene4() -> io::Result<()> {
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: i32 = 400;
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+// fn scene4() -> io::Result<()> {
+//     const ASPECT_RATIO: f64 = 16.0 / 9.0;
+//     const IMAGE_WIDTH: i32 = 400;
+//     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
 
-    const VIEWPORT_HEIGHT: f64 = 2.0;
-    const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
-    const FOCAL_LENGTH: f64 = 1.0;
+//     const VIEWPORT_HEIGHT: f64 = 2.0;
+//     const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
+//     const FOCAL_LENGTH: f64 = 1.0;
 
-    let origin = Point3d::zero();
-    let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
-    let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
-    let lower_left_corner =
-        origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
+//     let origin = Point3d::zero();
+//     let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
+//     let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
+//     let lower_left_corner =
+//         origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
 
-    let mut fp = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./result/circle_color.ppm")
-        .expect("cannot open file");
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/circle_color.ppm")
+//         .expect("cannot open file");
 
-    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        for i in 0..IMAGE_WIDTH {
-            let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
-            let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
+//             let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
 
-            let r = Ray::new(
-                origin,
-                lower_left_corner + u * horizontal + v * vertical - origin,
-            );
-            let pixel_color = ray_color_sphere_color(&r);
-            // write_color(&mut fp, pixel_color);
-        }
-    }
-    Ok(())
-}
+//             let r = Ray::new(
+//                 origin,
+//                 lower_left_corner + u * horizontal + v * vertical - origin,
+//             );
+//             let pixel_color = ray_color_sphere_color(&r);
+//             // write_color(&mut fp, pixel_color);
+//         }
+//     }
+//     Ok(())
+// }
 
-fn scene5() -> io::Result<()> {
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: i32 = 400;
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+// fn scene5() -> io::Result<()> {
+//     const ASPECT_RATIO: f64 = 16.0 / 9.0;
+//     const IMAGE_WIDTH: i32 = 400;
+//     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
 
-    let mut world = HittableList::new();
-    world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
-    world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
+//     let mut world = HittableList::new();
+//     world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
+//     world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
 
-    const VIEWPORT_HEIGHT: f64 = 2.0;
-    const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
-    const FOCAL_LENGTH: f64 = 1.0;
+//     const VIEWPORT_HEIGHT: f64 = 2.0;
+//     const VIEWPORT_WIDTH: f64 = ASPECT_RATIO * VIEWPORT_HEIGHT;
+//     const FOCAL_LENGTH: f64 = 1.0;
 
-    let origin = Point3d::zero();
-    let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
-    let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
-    let lower_left_corner =
-        origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
+//     let origin = Point3d::zero();
+//     let horizontal = Vec3d::new(VIEWPORT_WIDTH, 0.0, 0.0);
+//     let vertical = Vec3d::new(0.0, VIEWPORT_HEIGHT, 0.0);
+//     let lower_left_corner =
+//         origin - horizontal / 2.0 - vertical / 2.0 - Vec3d::new(0.0, 0.0, FOCAL_LENGTH);
 
-    let mut fp = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./result/circle_color_with_hittable.ppm")
-        .expect("cannot open file");
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/circle_color_with_hittable.ppm")
+//         .expect("cannot open file");
 
-    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        for i in 0..IMAGE_WIDTH {
-            let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
-            let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
+//             let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
 
-            let r = Ray::new(
-                origin,
-                lower_left_corner + u * horizontal + v * vertical - origin,
-            );
-            let pixel_color = ray_color_5(&r, &world);
-            // write_color(&mut fp, pixel_color);
-        }
-    }
-    Ok(())
-}
+//             let r = Ray::new(
+//                 origin,
+//                 lower_left_corner + u * horizontal + v * vertical - origin,
+//             );
+//             let pixel_color = ray_color_5(&r, &world);
+//             // write_color(&mut fp, pixel_color);
+//         }
+//     }
+//     Ok(())
+// }
 
-fn scene6() -> io::Result<()> {
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: i32 = 400;
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
-    const SAMPLES_PER_PIXEL: i32 = 100;
+// fn scene6() -> io::Result<()> {
+//     const ASPECT_RATIO: f64 = 16.0 / 9.0;
+//     const IMAGE_WIDTH: i32 = 400;
+//     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+//     const SAMPLES_PER_PIXEL: i32 = 100;
 
-    let mut world = HittableList::new();
-    world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
-    world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
+//     let mut world = HittableList::new();
+//     world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
+//     world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
 
-    let cam = Camera::new();
+//     let cam = Camera::new();
 
-    let mut fp = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./result/multi_sampled.ppm")
-        .expect("cannot open file");
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/multi_sampled.ppm")
+//         .expect("cannot open file");
 
-    fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        for i in 0..IMAGE_WIDTH {
-            let mut color = Color3d::only(0.0);
-            for s in 0..SAMPLES_PER_PIXEL {
-                let u = (i as f64 + random_double()) / (IMAGE_WIDTH - 1) as f64;
-                let v = (j as f64 + random_double()) / (IMAGE_HEIGHT - 1) as f64;
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let mut color = Color3d::only(0.0);
+//             for s in 0..SAMPLES_PER_PIXEL {
+//                 let u = (i as f64 + random_double()) / (IMAGE_WIDTH - 1) as f64;
+//                 let v = (j as f64 + random_double()) / (IMAGE_HEIGHT - 1) as f64;
 
-                let r = cam.get_ray(u, v);
-                color += ray_color_5(&r, &world);
-            }
-            write_color(&mut fp, color, SAMPLES_PER_PIXEL);
-        }
-    }
+//                 let r = cam.get_ray(u, v);
+//                 color += ray_color_5(&r, &world);
+//             }
+//             write_color(&mut fp, color, SAMPLES_PER_PIXEL);
+//         }
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-fn scene7() -> io::Result<()> {
+// fn scene7() -> io::Result<()> {
+//     const ASPECT_RATIO: f64 = 16.0 / 9.0;
+//     const IMAGE_WIDTH: i32 = 400;
+//     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+//     const SAMPLES_PER_PIXEL: i32 = 100;
+//     const MAX_DEPTH: i32 = 50;
+
+//     let mut world = HittableList::new();
+//     world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
+//     world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
+
+//     let cam = Camera::new();
+
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/diffuse_sphere.ppm")
+//         .expect("cannot open file");
+
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let mut color = Color3d::only(0.0);
+//             for _ in 0..SAMPLES_PER_PIXEL {
+//                 let u = (i as f64 + random_double()) / (IMAGE_WIDTH - 1) as f64;
+//                 let v = (j as f64 + random_double()) / (IMAGE_HEIGHT - 1) as f64;
+
+//                 let r = cam.get_ray(u, v);
+//                 color += ray_color_6(&r, &world, MAX_DEPTH);
+//             }
+//             write_color(&mut fp, color, SAMPLES_PER_PIXEL);
+//         }
+//     }
+
+//     Ok(())
+// }
+
+fn scene8() -> io::Result<()> {
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
     const IMAGE_WIDTH: i32 = 400;
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
@@ -331,15 +389,38 @@ fn scene7() -> io::Result<()> {
     const MAX_DEPTH: i32 = 50;
 
     let mut world = HittableList::new();
-    world.push(Sphere::new(Point3d::new(0.0, 0.0, -1.0), 0.5));
-    world.push(Sphere::new(Point3d::new(0.0, -100.5, -1.0), 100.0));
+    let material_ground = Diffuse::new(Color3d::new(0.8, 0.8, 0.0));
+    let material_center = Diffuse::new(Color3d::new(0.7, 0.3, 0.3));
+    let material_left = Metal::new(Color3d::new(0.8, 0.8, 0.8), 0.3);
+    let material_right = Metal::new(Color3d::new(0.8, 0.6, 0.2), 1.0);
+
+    world.push(Box::new(Sphere::new(
+        Point3d::new(0.0, -100.5, -1.0),
+        100.0,
+        material_ground,
+    )));
+    world.push(Box::new(Sphere::new(
+        Point3d::new(0.0, 0.0, -1.0),
+        0.5,
+        material_center,
+    )));
+    world.push(Box::new(Sphere::new(
+        Point3d::new(-1.0, 0.0, -1.0),
+        0.5,
+        material_left,
+    )));
+    world.push(Box::new(Sphere::new(
+        Point3d::new(1.0, 0.0, -1.0),
+        0.5,
+        material_right,
+    )));
 
     let cam = Camera::new();
 
     let mut fp = OpenOptions::new()
         .append(true)
         .create(true)
-        .open("./result/diffuse_sphere.ppm")
+        .open("./result/metal_spheres.ppm")
         .expect("cannot open file");
 
     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
@@ -352,7 +433,7 @@ fn scene7() -> io::Result<()> {
                 let v = (j as f64 + random_double()) / (IMAGE_HEIGHT - 1) as f64;
 
                 let r = cam.get_ray(u, v);
-                color += ray_color_6(&r, &world, MAX_DEPTH);
+                color += ray_color_7(&r, &world, MAX_DEPTH);
             }
             write_color(&mut fp, color, SAMPLES_PER_PIXEL);
         }
