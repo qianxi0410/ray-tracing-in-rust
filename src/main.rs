@@ -119,7 +119,7 @@ fn ray_color_7(r: &Ray, word: &Hittable, depth: i32) -> Color3d {
 }
 
 fn main() {
-    scene11();
+    scene12();
 }
 
 // fn scene1() -> io::Result<()> {
@@ -574,7 +574,58 @@ const MAX_DEPTH: i32 = 50;
 //     Ok(())
 // }
 
-fn scene11() -> io::Result<()> {
+// fn scene11() -> io::Result<()> {
+//     const ASPECT_RATIO: f64 = 16.0 / 9.0;
+//     const IMAGE_WIDTH: i32 = 400;
+//     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+//     const SAMPLES_PER_PIXEL: i32 = 100;
+//     const MAX_DEPTH: i32 = 50;
+
+//     let mut world = HittableList::new();
+//     let material_left = Diffuse::new(Point3d::new(0.0, 0.0, 1.0));
+//     let material_right = Diffuse::new(Point3d::new(1.0, 0.0, 0.0));
+
+//     let r = (PI / 4.0).cos();
+
+//     world.push(Box::new(Sphere::new(
+//         Point3d::new(-r, 0.0, -1.0),
+//         r,
+//         material_left,
+//     )));
+//     world.push(Box::new(Sphere::new(
+//         Point3d::new(r, 0.0, -1.0),
+//         r,
+//         material_right,
+//     )));
+
+//     let cam = Camera::new(90.0, ASPECT_RATIO);
+
+//     let mut fp = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("./result/wide_angle_view.ppm")
+//         .expect("cannot open file");
+
+//     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
+
+//     for j in (0..IMAGE_HEIGHT).rev() {
+//         for i in 0..IMAGE_WIDTH {
+//             let mut color = Color3d::only(0.0);
+//             for _ in 0..SAMPLES_PER_PIXEL {
+//                 let u = (i as f64 + random_double()) / (IMAGE_WIDTH - 1) as f64;
+//                 let v = (j as f64 + random_double()) / (IMAGE_HEIGHT - 1) as f64;
+
+//                 let r = cam.get_ray(u, v);
+//                 color += ray_color_7(&r, &world, MAX_DEPTH);
+//             }
+//             write_color(&mut fp, color, SAMPLES_PER_PIXEL);
+//         }
+//     }
+
+//     Ok(())
+// }
+
+fn scene12() -> io::Result<()> {
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
     const IMAGE_WIDTH: i32 = 400;
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
@@ -582,28 +633,51 @@ fn scene11() -> io::Result<()> {
     const MAX_DEPTH: i32 = 50;
 
     let mut world = HittableList::new();
-    let material_left = Diffuse::new(Point3d::new(0.0, 0.0, 1.0));
-    let material_right = Diffuse::new(Point3d::new(1.0, 0.0, 0.0));
+    let material_ground = Diffuse::new(Point3d::new(0.8, 0.8, 0.0));
+    let material_center = Diffuse::new(Point3d::new(0.1, 0.2, 0.5));
+    let material_left = Dieletric::new(1.5);
+    let material_right = Metal::new(Color3d::new(0.6, 0.8, 0.2), 0.0);
 
     let r = (PI / 4.0).cos();
 
     world.push(Box::new(Sphere::new(
-        Point3d::new(-r, 0.0, -1.0),
-        r,
+        Point3d::new(0.0, -100.5, -1.0),
+        100.0,
+        material_ground,
+    )));
+    world.push(Box::new(Sphere::new(
+        Point3d::new(0.0, 0.0, -1.0),
+        0.5,
+        material_center,
+    )));
+    world.push(Box::new(Sphere::new(
+        Point3d::new(-1.0, 0.0, -1.0),
+        0.5,
         material_left,
     )));
     world.push(Box::new(Sphere::new(
-        Point3d::new(r, 0.0, -1.0),
-        r,
+        Point3d::new(-1.0, 0.0, -1.0),
+        -0.45,
+        Dieletric::new(1.5),
+    )));
+    world.push(Box::new(Sphere::new(
+        Point3d::new(1.0, 0.0, -1.0),
+        0.5,
         material_right,
     )));
 
-    let cam = Camera::new(90.0, ASPECT_RATIO);
+    let cam = Camera::new(
+        Point3d::new(-2.0, 2.0, 1.0),
+        Point3d::new(0.0, 0.0, -1.0),
+        Vec3d::new(0.0, 1.0, 0.0),
+        90.0,
+        ASPECT_RATIO,
+    );
 
     let mut fp = OpenOptions::new()
         .append(true)
         .create(true)
-        .open("./result/wide_angle_view.ppm")
+        .open("./result/zoom_view.ppm")
         .expect("cannot open file");
 
     fp.write(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT).as_bytes());
