@@ -19,7 +19,13 @@ impl Camera {
         )
     }
 
-    pub fn new(vfov: f64, aspect_ratio: f64) -> Self {
+    pub fn new(
+        lookfrom: Point3d,
+        lookat: Point3d,
+        vup: Vec3d,
+        vfov: f64,
+        aspect_ratio: f64,
+    ) -> Self {
         // let aspect_ratio = 16.0 / 9.0;
         // let viewport_height = 2.0;
         // let viewport_width = aspect_ratio * viewport_height;
@@ -30,16 +36,15 @@ impl Camera {
         let viewport_height = 2.0 * h;
         let viewport_width = aspect_ratio * viewport_height;
 
-        let focal_length = 1.0;
+        let w = Vec3d::unit_vector(&(lookfrom - lookat));
+        let u = vup.cross(&w).unit_vector();
+        let v = w.cross(&u);
 
         Self {
-            origin: Point3d::only(0.0),
-            horizontal: Vec3d::new(viewport_width, 0.0, 0.0),
-            vertical: Vec3d::new(0.0, viewport_height, 0.0),
-            lower_left_corner: Point3d::only(0.0)
-                - Vec3d::new(viewport_width, 0.0, 0.0) / 2.0
-                - Vec3d::new(0.0, viewport_height, 0.0) / 2.0
-                - Vec3d::new(0.0, 0.0, focal_length),
+            origin: lookfrom,
+            horizontal: viewport_width * u,
+            vertical: viewport_height * v,
+            lower_left_corner: lookfrom - viewport_width * u / 2.0 - viewport_height * v / 2.0 - w,
         }
     }
 }
