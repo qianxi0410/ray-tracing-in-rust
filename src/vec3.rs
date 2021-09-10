@@ -227,6 +227,16 @@ impl Vec3<f64> {
 
         r_out_parallel + r_out_perp
     }
+
+    pub fn random_in_unit_disk() -> Vec3d {
+        loop {
+            let p = Vec3d::new(random_range(-1.0, 1.0), random_range(-1.0, 1.0), 0.0);
+            if p.length_squared() >= 1.0 {
+                continue;
+            }
+            return p;
+        }
+    }
 }
 
 pub type Point3d = Vec3<f64>;

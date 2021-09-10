@@ -13,6 +13,20 @@ pub trait Material {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color3d, Ray)>;
 }
 
+impl Material for Box<dyn Material> {
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<(Color3d, Ray)> {
+        self.as_ref().scatter(ray_in, hit_record)
+    }
+}
+
+impl<M: Material> Material for Box<M> {
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<(Color3d, Ray)> {
+        self.as_ref().scatter(ray_in, hit_record)
+    }
+}
+
+#[derive(Clone)]
+
 pub struct Diffuse {
     albedo: Color3d,
 }
@@ -62,7 +76,7 @@ impl Material for Metal {
         }
     }
 }
-
+#[derive(Clone)]
 pub struct Dieletric {
     ir: f64,
 }

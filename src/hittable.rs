@@ -1,5 +1,5 @@
 use crate::{
-    material::{self, Material},
+    material::Material,
     ray::Ray,
     vec3::{Point3d, Vec3d},
 };
@@ -48,4 +48,10 @@ impl<'a> HitRecord<'a> {
 
 pub trait Hittable {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+}
+
+impl Hittable for Box<dyn Hittable> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        self.as_ref().hit(r, t_min, t_max)
+    }
 }
