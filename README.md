@@ -1,9 +1,13 @@
-ray-tracing-in-rust
+## ray tracing in rust
 
-see: [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html#thevec3class/vec3utilityfunctions)
+Reference: [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html#thevec3class/vec3utilityfunctions)
 
-results:
+## results:
+
+final scene: 
 
 ![final-scene](./img/final-scene.png)
 
-license: [mit](./LICENSE)
+## license
+
+[mit](./LICENSE)
